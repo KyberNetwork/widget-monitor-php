@@ -1,8 +1,6 @@
 <?php
 
-namespace ETH;
-
-class Demo{
+class Helper{
   public static function demo(){
     return 'DEMO!';
   }

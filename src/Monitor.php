@@ -7,7 +7,7 @@ use Web3\Providers\HttpProvider;
 use Web3\RequestManagers\HttpRequestManager;
 use Exception;
 
-class HelloWorld{
+class Monitor{
 
   protected $node = 'https://mainnet.infura.io';
   protected $blockConfirm = 30;
