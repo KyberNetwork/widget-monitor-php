@@ -102,6 +102,7 @@ class Monitor{
     if($blockConfirmed > $this->blockConfirm){
       $status = hexdec($txReceipt->status);
       if($status){
+        $from = $to = $sentAddress = $receivedAddress = null;
         if(strtolower($txReceipt->to) == strtolower($this->config->network)){
           $tradeData = $this->handleTrade();
           $type = 'trade';
@@ -110,7 +111,11 @@ class Monitor{
           $sentAddress = $tradeData['sentAddress'];
           $receivedAddress = $tradeData['receivedAddress'];
         }else{
-          $this->handleTransfer();
+          $transferData = $this->handleTransfer();
+          $from = $transferData['src'];
+          $to = $transferData['dest'];
+          $sentAddress = $transferData['sentAddress'];
+          $receivedAddress = $transferData['receivedAddress'];
           $type = 'transfer';
         }
         return [
@@ -151,13 +156,13 @@ class Monitor{
           if($token->address == $dest['address']){
             $dest['decimal'] = $token->decimal;
             $dest['symbol'] = $token->symbol;
-            $dest['amount'] = hexdec($hexActualDestAmount) / pow(10, $token->decimal);
+            $dest['amount'] = $this->toRealAmount($hexActualDestAmount, $token->decimal);
             $dest['amount'] = strval($dest['amount']);
           }
           if($token->address == $src['address']){
             $src['decimal'] = $token->decimal;
             $src['symbol'] = $token->symbol;
-            $src['amount'] = hexdec($hexActualSrcAmount) / pow(10, $token->decimal);
+            $src['amount'] = $this->toRealAmount($hexActualSrcAmount, $token->decimal);
             $src['amount'] = strval($src['amount']);
           }
           if(isset($dest['symbol']) && isset($src['symbol'])) break;
@@ -180,7 +185,39 @@ class Monitor{
   }
 
   protected function handleTransfer(){
-    
+    $txReceipt = $this->txData['txReceipt'];
+    $tx = $this->txData['tx'];
+    $value = hexdec($tx->value);
+    $token = 'ETH';
+    $sentAddress = $tx->from;
+    if($value > 0){
+      $decimal = $this->config->tokens->$token->decimal;
+      $amount = strval($this->toRealAmount($value, $decimal));
+      $receivedAddress = $tx->to;
+    }else{
+      foreach($this->config->tokens as $t) {
+        if($t->address == $tx->to){
+          $token = $t->symbol;
+          $decimal = $t->decimal;
+          break;
+        }
+      }
+      $readLogData = $this->readTxLog($tx->input);
+      $receivedAddress = $this->toAddress($readLogData[0]);
+      $amount = strval($this->toRealAmount($readLogData[1], $decimal));
+    }
+    return [
+      'src' => [
+        'symbol' => $token,
+        'amount' => $amount,
+      ], 
+      'dest' => [
+        'symbol' => $token,
+        'amount' => $amount,
+      ], 
+      'sentAddress' => $sentAddress, 
+      'receivedAddress' => $receivedAddress
+    ];
   }
 
   protected function readTxLog($logData){
@@ -208,6 +245,10 @@ class Monitor{
 
   public function toAddress($hex){
     return '0x' . substr($hex, strlen($hex) - 40, strlen($hex));
+  }
+
+  public function toRealAmount($amount, $decimal){
+    return hexdec($amount) / pow(10, $decimal);
   }
 
   public function readConfig(){
