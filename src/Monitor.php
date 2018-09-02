@@ -38,29 +38,30 @@ class Monitor{
   }
 
   public function checkStatus($tx){
+    $this->tx = $tx;
     $txLost = false;
     if($tx){
       $starttime = microtime(true);
       while(true){
-        $this->eth->getTransactionReceipt($tx, function ($err, $txReceipt) {
-          if ($err) {
-            $this->logDebug($err->getMessage());
-            sleep($this->intervalRefetchTx);
-          }
-          if ($txReceipt) {
-            $this->txData['txReceipt'] = $txReceipt;
-            $this->logDebug($txReceipt);
-            
-            $this->eth->getTransactionByHash($txReceipt->transactionHash, function ($err, $tx) {
-              if ($err) $this->logDebug($err->getMessage());
-              if ($tx) {
-                $this->txData['tx'] = $tx;
-                $this->logDebug($tx);
-              }
-            });
-
-          }
-        });
+        if(!$this->txData['txReceipt']){
+          $this->eth->getTransactionReceipt($tx, function ($err, $txReceipt) {
+            if ($err) {
+              $this->logDebug($err->getMessage());
+              sleep($this->intervalRefetchTx);
+            }
+            if ($txReceipt) {
+              $this->txData['txReceipt'] = $txReceipt;
+            }
+          });
+        }
+        if(!$this->txData['tx']){
+          $this->eth->getTransactionByHash($tx, function ($err, $txHash) {
+            if ($err) $this->logDebug($err->getMessage());
+            if ($txHash) {
+              $this->txData['tx'] = $txHash;
+            }
+          });
+        }
         if($this->txData['txReceipt'] && $this->txData['tx']){
           break;
         }else{
@@ -93,8 +94,6 @@ class Monitor{
     }
 
     $txReceipt = $this->txData['txReceipt'];
-    $tx = $this->txData['tx'];
-
     $currentBlock = hexdec($this->currentBlock->number);
     $txBlock = hexdec($txReceipt->blockNumber);
     $blockConfirmed = $currentBlock - $txBlock;
@@ -130,7 +129,12 @@ class Monitor{
         return [ 'status' => 'FAIL' ];
       }
     }else{
-      $this->checkStatus($tx);
+      $this->txData = [
+        'txReceipt' => null,
+        'tx' => null,
+      ];
+      sleep($this->intervalRefetchTx);
+      return $this->checkStatus($tx);
     }
   }
 
