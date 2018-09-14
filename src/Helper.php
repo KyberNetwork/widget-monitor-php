@@ -1,12 +1,17 @@
 <?php
 
 function logDebug($data){
-  $file = 'logs';
-  $fh = fopen($file, 'a') or die("Can't create file");
-  $current = file_get_contents($file);
-  $data = json_encode($data);
-  $current .= "$data\n";
-  file_put_contents($file, $current);
+  if (!file_exists('logs')) {
+    $x = mkdir('logs', 0777, true);
+  }
+  $file = 'logs/logs';
+  $fh = fopen($file, 'a');
+  if($fh){
+    $current = file_get_contents($file);
+    $data = json_encode($data);
+    $current .= "$data\n";
+    file_put_contents($file, $current);
+  }
 }
 
 function readTxLog($logData){
