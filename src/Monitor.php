@@ -11,7 +11,7 @@ use Exception;
 class Monitor{
 
   protected $node = 'https://mainnet.infura.io';
-  protected $blockConfirm = 30;
+  protected $blockConfirm = 7;
   protected $txLostTimeout = 15; // minutes
   protected $intervalRefetchTx = 5; // sec
   protected $currentBlock = null;
@@ -28,7 +28,7 @@ class Monitor{
       $this->node = $params['node'];
     if(isset($params['network'])) 
       $this->network = $params['network'];
-    if(isset($params['blockConfirm'])) 
+    if(isset($params['blockConfirm']) && $params['blockConfirm'] > 0) 
       $this->blockConfirm = $params['blockConfirm'];
     if(isset($params['txLostTimeout'])) 
       $this->txLostTimeout = $params['txLostTimeout'];
