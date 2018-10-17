@@ -10,13 +10,13 @@ use Exception;
 
 class Monitor{
 
-  protected $node = 'https://mainnet.infura.io';
+  protected $node = 'https://ropsten.infura.io';
   protected $blockConfirm = 7;
   protected $txLostTimeout = 15; // minutes
   protected $intervalRefetchTx = 5; // sec
   protected $currentBlock = null;
   protected $eth = null;
-  protected $network = null;
+  protected $network = 'ropsten';
   protected $config = null;
   protected $txData = [
     'txReceipt' => null,
@@ -102,8 +102,27 @@ class Monitor{
     if($blockConfirmed > $this->blockConfirm){
       $status = hexdec($txReceipt->status);
       if($status){
+        $txBlock = null;
+        while(true){
+          $this->eth->getBlockByNumber($txBlockNumber, false, function ($err, $block) use (&$txBlock) {
+            if ($err !== null) logDebug($err->getMessage());
+            if($block){
+              $txBlock = $block;
+            }
+          });
+          if($txBlock){
+            break;
+          }
+        }
         $from = $to = $sentAddress = $receivedAddress = null;
-        if(strtolower($txReceipt->to) == strtolower($this->config->network)){
+        if(strtolower($txReceipt->to) == strtolower($this->config->payWrapper)){
+          $payData = $this->handlePay();
+          $type = 'pay';
+          $from = $payData['src'];
+          $to = $payData['dest'];
+          $sentAddress = $payData['sentAddress'];
+          $receivedAddress = $payData['receivedAddress'];
+        }elseif(strtolower($txReceipt->to) == strtolower($this->config->network)){
           $tradeData = $this->handleTrade();
           $type = 'trade';
           $from = $tradeData['src'];
@@ -117,18 +136,6 @@ class Monitor{
           $sentAddress = $transferData['sentAddress'];
           $receivedAddress = $transferData['receivedAddress'];
           $type = 'transfer';
-        }
-        $txBlock = null;
-        while(true){
-          $this->eth->getBlockByNumber($txBlockNumber, false, function ($err, $block) use (&$txBlock) {
-            if ($err !== null) logDebug($err->getMessage());
-            if($block){
-              $txBlock = $block;
-            }
-          });
-          if($txBlock){
-            break;
-          }
         }
         return [
           'status' => 'SUCCESS',
@@ -155,8 +162,7 @@ class Monitor{
   protected function handleTrade(){
     $txReceipt = $this->txData['txReceipt'];
     $tx = $this->txData['tx'];
-
-    $recivedAddress = null;
+    
     $src = [];
     $dest = [];
     foreach($txReceipt->logs as $log){
@@ -233,6 +239,55 @@ class Monitor{
         'symbol' => $token,
         'amount' => $amount,
       ], 
+      'sentAddress' => $sentAddress, 
+      'receivedAddress' => $receivedAddress
+    ];
+  }
+
+  protected function handlePay(){
+    $txReceipt = $this->txData['txReceipt'];
+    $tx = $this->txData['tx'];
+    $readInputData = readTxLog($tx->input);
+
+    $src = [];
+    $dest = [];
+
+    $sentAddress = $tx->from;
+    $receivedAddress = toAddress($readInputData[3]);
+
+    foreach($txReceipt->logs as $log){
+      if($log->address == $this->config->payWrapper){
+        $readLogData = readTxLog($log->data);
+        $hexSrc = $readInputData[0];
+        $hexDest = $readInputData[2];
+        $hexActualSrcAmount = $readInputData[1];
+        $hexActualDestAmount = $readLogData[2];
+
+        $src['address'] = toAddress($hexSrc);
+        $dest['address'] = toAddress($hexDest);
+
+        foreach($this->config->tokens as $token) {
+          if($token->address == $dest['address']){
+            $dest['decimal'] = $token->decimal;
+            $dest['symbol'] = $token->symbol;
+            $dest['amount'] = toRealAmount(hexdec($hexActualDestAmount), $token->decimal);
+            $dest['amount'] = strval($dest['amount']);
+          }
+          if($token->address == $src['address']){
+            $src['decimal'] = $token->decimal;
+            $src['symbol'] = $token->symbol;
+            $src['amount'] = toRealAmount(hexdec($hexActualSrcAmount), $token->decimal);
+            $src['amount'] = strval($src['amount']);
+          }
+          if(isset($dest['symbol']) && isset($src['symbol'])) break;
+        }
+        break;
+      }
+    }
+    
+    return [
+      'src' => $src, 
+      'dest' => $dest, 
       'sentAddress' => $sentAddress, 
       'receivedAddress' => $receivedAddress
     ];
