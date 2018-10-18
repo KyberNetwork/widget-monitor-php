@@ -10,6 +10,11 @@ $ composer require tranbaohuy/monitor-eth-tx
 ## Usage
 
 ```php
+<?php 
+
+require_once __DIR__ . '/vendor/autoload.php';
+use ETH\Monitor;
+
 $monitor = new Monitor([
   'node' => 'https://ropsten.infura.io',
   'network' => 'ropsten',
@@ -17,8 +22,10 @@ $monitor = new Monitor([
   'txLostTimeout' => 15, // minutes
   'intervalRefetchTx' => 10, // seconds
 ]);
+
 $tx = '0xda023ae54d8a110f5f7eb002080edeeddb1d78d6de41cf46d37e3b631b56b01b';
-$data = $monitor->checkStatus($tx)
+$data = $monitor->checkStatus($tx);
+
 ```
 Currently, the following options are supported.
 
