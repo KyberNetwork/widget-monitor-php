@@ -102,18 +102,6 @@ class Monitor{
     if($blockConfirmed > $this->blockConfirm){
       $status = hexdec($txReceipt->status);
       if($status){
-        $txBlock = null;
-        while(true){
-          $this->eth->getBlockByNumber($txBlockNumber, false, function ($err, $block) use (&$txBlock) {
-            if ($err !== null) logDebug($err->getMessage());
-            if($block){
-              $txBlock = $block;
-            }
-          });
-          if($txBlock){
-            break;
-          }
-        }
         $from = $to = $sentAddress = $receivedAddress = null;
         if(strtolower($txReceipt->to) == strtolower($this->config->payWrapper)){
           $payData = $this->handlePay();
@@ -136,6 +124,18 @@ class Monitor{
           $sentAddress = $transferData['sentAddress'];
           $receivedAddress = $transferData['receivedAddress'];
           $type = 'transfer';
+        }
+        $txBlock = null;
+        while(true){
+          $this->eth->getBlockByNumber($txBlockNumber, false, function ($err, $block) use (&$txBlock) {
+            if ($err !== null) logDebug($err->getMessage());
+            if($block){
+              $txBlock = $block;
+            }
+          });
+          if($txBlock){
+            break;
+          }
         }
         return [
           'status' => 'SUCCESS',
