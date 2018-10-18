@@ -42,7 +42,7 @@ class Monitor{
     $this->tx = $tx;
     $txLost = false;
     if($tx){
-      $starttime = microtime(true);
+      $starttime = time();
       while(true){
         if(!$this->txData['txReceipt']){
           $this->eth->getTransactionReceipt($tx, function ($err, $txReceipt) {
@@ -66,8 +66,8 @@ class Monitor{
         if($this->txData['txReceipt'] && $this->txData['tx']){
           break;
         }else{
-          $endtime = microtime(true);
-          $timediff = ($endtime - $starttime) / pow(10,6) / 60;
+          $endtime = time(true);
+          $timediff = ($endtime - $starttime) / 60;
           if($timediff > $this->txLostTimeout){
             $txLost = true;
             break;
@@ -75,13 +75,14 @@ class Monitor{
         }
       }
     }
-    return $this->handleData($tx, $txLost);
-  }
-
-  protected function handleData($tx, $txLost = false){
     if($txLost){
       return [ 'status' => 'LOST' ];
+    }else{
+      return $this->handleData($tx);
     }
+  }
+
+  protected function handleData($tx){
     $currentBlock = null;
     while(true){
       $this->eth->getBlockByNumber('latest', false, function ($err, $block) use (&$currentBlock) {
