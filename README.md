@@ -1,7 +1,13 @@
 # Monitor Kyber Transaction (Swap / Widget)
 
 ## Install
-Install monitor-tx using npm:
+Set minimum stability to dev
+
+```
+"minimum-stability": "dev"
+```
+
+Then
 
 ```console
 $ composer require tranbaohuy/monitor-eth-tx
