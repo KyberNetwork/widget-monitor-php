@@ -14,6 +14,10 @@ function logDebug($data){
   }
 }
 
+function toString($number){
+  return sprintf('%.20f', $number);
+}
+
 function readTxLog($logData){
   $hexLength = 64;
   $preData = strlen($logData) - (floor(strlen($logData)/$hexLength)) * 64;

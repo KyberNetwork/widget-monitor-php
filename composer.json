@@ -1,6 +1,6 @@
 {
-    "name": "tranbaohuy/monitor-eth-tx",
-    "description": "Monitor Ethereum transaction.",
+    "name": "kyber/monitor-kyber-tx",
+    "description": "Monitor Kyber transaction.",
     "license": "MIT",
     "type": "Library",
     "authors": [

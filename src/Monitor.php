@@ -139,6 +139,7 @@ class Monitor{
           }
         }
         return [
+          'txHash' => $this->tx,
           'status' => 'SUCCESS',
           'from' => $from,
           'to' => $to,
@@ -262,7 +263,7 @@ class Monitor{
         $hexSrc = $readInputData[0];
         $hexDest = $readInputData[2];
         $hexActualSrcAmount = $readInputData[1];
-        $hexActualDestAmount = $readLogData[2];
+        $hexActualDestAmount = $readLogData[1];
 
         $src['address'] = toAddress($hexSrc);
         $dest['address'] = toAddress($hexDest);
