@@ -10,7 +10,7 @@ Set minimum stability to dev
 Then
 
 ```console
-$ composer require tranbaohuy/monitor-eth-tx
+$ composer require kyber/monitor-kyber-tx
 ```
 
 ## Usage
