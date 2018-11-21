@@ -165,15 +165,24 @@ class Monitor{
     $txReceipt = $this->txData['txReceipt'];
     $tx = $this->txData['tx'];
     
+    $eventLogParams = [
+      'srcAddress' => 0, 
+      'srcToken' => 1, 
+      'srcAmount' => 2, 
+      'destAddress' => 3, 
+      'destToken' => 4, 
+      'destAmount' => 5
+    ];
+
     $src = [];
     $dest = [];
     foreach($txReceipt->logs as $log){
       if($log->topics[0] == $this->config->trade_topic){
         $readLogData = readTxLog($log->data);
-        $hexSrc = $readLogData[0];
-        $hexDest = $readLogData[1];
-        $hexActualSrcAmount = $readLogData[2];
-        $hexActualDestAmount = $readLogData[3];
+        $hexSrc = $readLogData[$eventLogParams['srcToken']];
+        $hexDest = $readLogData[$eventLogParams['destToken']];
+        $hexActualSrcAmount = $readLogData[$eventLogParams['srcAmount']];
+        $hexActualDestAmount = $readLogData[$eventLogParams['destAmount']];
 
         $src['address'] = toAddress($hexSrc);
         $dest['address'] = toAddress($hexDest);
@@ -193,14 +202,12 @@ class Monitor{
           }
           if(isset($dest['symbol']) && isset($src['symbol'])) break;
         }
-        $hexSentAddress = $log->topics[1];
-        $sentAddress = '0x' . substr($hexSentAddress, strlen($hexSentAddress) - 40, strlen($hexSentAddress));
         break;
       }
     }
 
-    $readInputData = readTxLog($tx->input);
-    $receivedAddress = toAddress($readInputData[3]);
+    $sentAddress = toAddress($readLogData[$eventLogParams['srcAddress']]);
+    $receivedAddress = toAddress($readLogData[$eventLogParams['destAddress']]);
 
     return [
       'src' => $src, 

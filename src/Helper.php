@@ -14,10 +14,6 @@ function logDebug($data){
   }
 }
 
-function toString($number){
-  return sprintf('%.20f', $number);
-}
-
 function readTxLog($logData){
   $hexLength = 64;
   $preData = strlen($logData) - (floor(strlen($logData)/$hexLength)) * 64;
@@ -42,7 +38,7 @@ function toRealAmount($amount, $decimal){
 
 function readConfig($network){
   try{
-    $file = dirname(__FILE__, 2) . "/config/$network.json";
+    $file = dirname(__FILE__, 2) . "/config/network/$network.json";
     if ( !file_exists($file) ) {
       throw new Exception('File not found.');
     }
