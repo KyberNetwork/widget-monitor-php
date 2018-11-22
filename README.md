@@ -29,7 +29,7 @@ $monitor = new Monitor([
   'intervalRefetchTx' => 10, // seconds
 ]);
 
-$tx = '0xda023ae54d8a110f5f7eb002080edeeddb1d78d6de41cf46d37e3b631b56b01b';
+$tx = '0xf513db1b7de61ba88afecd5a9a228c983b5b0b6b48bbb56f859bcd60dafc245d';
 $data = $monitor->checkStatus($tx);
 
 ```
