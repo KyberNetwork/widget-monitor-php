@@ -1,7 +1,8 @@
 <?php
 
 namespace ETH;
-require 'Helper.php';
+require_once 'Helper.php';
+require_once 'Database.php';
 
 use Web3\Web3;
 use Web3\Providers\HttpProvider;
@@ -18,10 +19,7 @@ class Monitor{
   protected $eth = null;
   protected $network = 'ropsten';
   protected $config = null;
-  protected $txData = [
-    'txReceipt' => null,
-    'tx' => null,
-  ];
+  protected $useDatabase = false;
 
   public function __construct($params = []){
     if(isset($params['node'])) 
@@ -35,12 +33,23 @@ class Monitor{
     if(isset($params['intervalRefetchTx'])) 
       $this->intervalRefetchTx = $params['intervalRefetchTx'];
     $this->config = readConfig($this->network);
+    if(isset($params['intervalRefetchTx'])) 
+      $this->useDatabase = $params['useDatabase'];
     $this->eth = (new Web3(new HttpProvider(new HttpRequestManager($this->node, 5))))->eth;
   }
 
   public function checkStatus($tx){
-    $this->tx = $tx;
     $txLost = false;
+    $this->txData = [
+      'txReceipt' => null,
+      'tx' => null,
+    ];
+    if($this->useDatabase){
+      insertDB([
+        'hash' => $tx, 
+        'status' => 'PENDING',
+      ]);
+    }
     if($tx){
       $starttime = time();
       while(true){
@@ -73,9 +82,16 @@ class Monitor{
             break;
           }
         }
+        if($this->useDatabase) break;
       }
     }
     if($txLost){
+      if($this->useDatabase){
+        updateDB([
+          'hash' => $tx, 
+          'status' => 'LOST',
+        ]);
+      }
       return [ 'status' => 'LOST' ];
     }else{
       return $this->handleData($tx);
@@ -99,65 +115,85 @@ class Monitor{
     $txReceipt = $this->txData['txReceipt'];
     $txBlockNumber = hexdec($txReceipt->blockNumber);
     $blockConfirmed = $currentBlock - $txBlockNumber;
-    
-    if($blockConfirmed > $this->blockConfirm){
-      $status = hexdec($txReceipt->status);
-      if($status){
-        $from = $to = $sentAddress = $receivedAddress = null;
-        if(strtolower($txReceipt->to) == strtolower($this->config->payWrapper)){
-          $payData = $this->handlePay();
-          $type = 'pay';
-          $from = $payData['src'];
-          $to = $payData['dest'];
-          $sentAddress = $payData['sentAddress'];
-          $receivedAddress = $payData['receivedAddress'];
-        }elseif(strtolower($txReceipt->to) == strtolower($this->config->network)){
-          $tradeData = $this->handleTrade();
-          $type = 'trade';
-          $from = $tradeData['src'];
-          $to = $tradeData['dest'];
-          $sentAddress = $tradeData['sentAddress'];
-          $receivedAddress = $tradeData['receivedAddress'];
-        }else{
-          $transferData = $this->handleTransfer();
-          $from = $transferData['src'];
-          $to = $transferData['dest'];
-          $sentAddress = $transferData['sentAddress'];
-          $receivedAddress = $transferData['receivedAddress'];
-          $type = 'transfer';
-        }
-        $txBlock = null;
-        while(true){
-          $this->eth->getBlockByNumber($txBlockNumber, false, function ($err, $block) use (&$txBlock) {
-            if ($err !== null) logDebug($err->getMessage());
-            if($block){
-              $txBlock = $block;
-            }
-          });
-          if($txBlock){
-            break;
+    if($txReceipt){
+      if($blockConfirmed > $this->blockConfirm){
+        $status = hexdec($txReceipt->status);
+        if($status){
+          $from = $to = $sentAddress = $receivedAddress = null;
+          if(strtolower($txReceipt->to) == strtolower($this->config->payWrapper)){
+            $payData = $this->handlePay();
+            $type = 'pay';
+            $from = $payData['src'];
+            $to = $payData['dest'];
+            $sentAddress = $payData['sentAddress'];
+            $receivedAddress = $payData['receivedAddress'];
+          }elseif(strtolower($txReceipt->to) == strtolower($this->config->network)){
+            $tradeData = $this->handleTrade();
+            $type = 'trade';
+            $from = $tradeData['src'];
+            $to = $tradeData['dest'];
+            $sentAddress = $tradeData['sentAddress'];
+            $receivedAddress = $tradeData['receivedAddress'];
+          }else{
+            $transferData = $this->handleTransfer();
+            $from = $transferData['src'];
+            $to = $transferData['dest'];
+            $sentAddress = $transferData['sentAddress'];
+            $receivedAddress = $transferData['receivedAddress'];
+            $type = 'transfer';
           }
+          $txBlock = null;
+          while(true){
+            $this->eth->getBlockByNumber($txBlockNumber, false, function ($err, $block) use (&$txBlock) {
+              if ($err !== null) logDebug($err->getMessage());
+              if($block){
+                $txBlock = $block;
+              }
+            });
+            if($txBlock){
+              break;
+            }
+          }
+          if($this->useDatabase){
+            updateDB([
+              'hash' => $tx, 
+              'status' => 'SUCCESS', 
+              'source_amount' => $from['amount'], 
+              'source_symbol' => $from['symbol'], 
+              'dest_amount' => $to['amount'], 
+              'dest_symbol' => $to['symbol']
+            ]);
+          }
+
+          return [
+            'txHash' => $tx,
+            'status' => 'SUCCESS',
+            'from' => $from,
+            'to' => $to,
+            'sentAddress' => $sentAddress,
+            'receivedAddress' => $receivedAddress,
+            'timestamp' => hexdec($txBlock->timestamp),
+            'type' => $type,
+          ];
+        }else{
+          if($this->useDatabase){
+            updateDB([
+              'hash' => $tx, 
+              'status' => 'FAIL', 
+            ]);
+          }
+          return [ 'status' => 'FAIL' ];
         }
-        return [
-          'txHash' => $this->tx,
-          'status' => 'SUCCESS',
-          'from' => $from,
-          'to' => $to,
-          'sentAddress' => $sentAddress,
-          'receivedAddress' => $receivedAddress,
-          'timestamp' => hexdec($txBlock->timestamp),
-          'type' => $type,
-        ];
       }else{
-        return [ 'status' => 'FAIL' ];
+        $this->txData = [
+          'txReceipt' => null,
+          'tx' => null,
+        ];
+        sleep($this->intervalRefetchTx);
+        return $this->checkStatus($tx);
       }
     }else{
-      $this->txData = [
-        'txReceipt' => null,
-        'tx' => null,
-      ];
-      sleep($this->intervalRefetchTx);
-      return $this->checkStatus($tx);
+      return [ 'status' => 'PENDING' ];
     }
   }
 
@@ -302,4 +338,10 @@ class Monitor{
     ];
   }
 
+  public function recheckTxDB(){
+    $pendingTxs = getPendingTx();
+    foreach($pendingTxs as $tx){
+      $this->checkStatus($tx['hash']);
+    }
+  }
 }
