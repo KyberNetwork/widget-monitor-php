@@ -9,9 +9,10 @@
     'txLostTimeout' => 15, // minutes
     'intervalRefetchTx' => 10, // seconds
     'checkPaymentValid' => true,
-    'receivedAddress' => '0x63b42a7662538a1da732488c252433313396eade',
-    'amount' => 0.05,
-    'receivedToken' => "OMG",
+    'receivedAddress' => '0x3bae9b9e1dca462ad8827f62f4a8b5b3714d7700',
+    'amount' => 6,
+    'receivedToken' => "KNC",
+    'useIntervalLoop' => false,
   ]);
 
   // swap

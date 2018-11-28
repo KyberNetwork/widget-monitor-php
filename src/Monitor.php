@@ -24,7 +24,7 @@ class Monitor{
   protected $receivedAddress = null;
   protected $amount = null;
   protected $receivedToken = null;
-  protected $useIntervalLoop = false;
+  protected $useIntervalLoop = true;
 
   public function __construct($params = []){
     if($params['node']) $this->node = $params['node'];
@@ -104,7 +104,7 @@ class Monitor{
           }
         }
 
-        if($this->useDatabase || $this->useIntervalLoop) return [ 'status' => 'PENDING' ];
+        if($this->useDatabase || !$this->useIntervalLoop) return [ 'status' => 'PENDING' ];
       }
     }
     if($txLost){
@@ -218,7 +218,7 @@ class Monitor{
         return [ 'status' => 'FAIL' ];
       }
     }else{
-      if($this->useDatabase || $this->useIntervalLoop) return [ 'status' => 'PENDING' ];
+      if($this->useDatabase || !$this->useIntervalLoop) return [ 'status' => 'PENDING' ];
       $this->txData = [
         'txReceipt' => null,
         'tx' => null,
