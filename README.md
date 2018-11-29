@@ -41,7 +41,7 @@ $data = $monitor->checkStatus($tx);
 Currently, the following options are supported.
 
 |     Field               |   Type    |   Default                     |     Detail                                                          |
-|-------------------------|-----------|-----------------------------------------------------------------------------------------------------|
+|-------------------------|-----------|-------------------------------|---------------------------------------------------------------------|
 |     node                |  String   | https://ropsten.infura.io     |     URL of node                                                     |
 |     network             |  String   | ropsten (mainnet, rinkerby)   |     Ethereum network                                                |
 |     blockConfirm        |  Number   | 7                             |     Number of block confirmation                                    |
@@ -86,7 +86,7 @@ Currently, the following options are supported.
 ```
 
 #### Example script to check pending transactions which stored in database.
-You need to config your server to run this script
+You need to config your server to run this script via cronjob.
 
 ```php
 <?php 
