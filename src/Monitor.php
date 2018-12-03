@@ -391,7 +391,7 @@ class Monitor{
   protected function checkPaymentValidFunc($receivedAddress, $amount, $receivedToken){
     if(
       $this->checkPaymentValid &&
-      $receivedAddress == $this->receivedAddress &&
+      strtolower($receivedAddress) == strtolower($this->receivedAddress) &&
       $amount >= $this->amount &&
       $receivedToken == $this->receivedToken
     ){
