@@ -88,7 +88,7 @@ class Monitor{
           }
         }
 
-        if($this->useDatabase || !$this->useIntervalLoop) return [ 'status' => 'PENDING' ];
+        if($this->useDatabase || !$this->useIntervalLoop) return [ 'hash' => $tx, 'status' => 'PENDING' ];
       }
     }
     if($txLost){
@@ -98,7 +98,7 @@ class Monitor{
           'status' => 'LOST',
         ]);
       }
-      return [ 'status' => 'LOST' ];
+      return [ 'hash' => $tx, 'status' => 'LOST' ];
     }else{
       return $this->handleData($tx);
     }
@@ -180,7 +180,7 @@ class Monitor{
         return [ 'status' => 'FAIL' ];
       }
     }else{
-      if($this->useDatabase || !$this->useIntervalLoop) return [ 'status' => 'PENDING' ];
+      if($this->useDatabase || !$this->useIntervalLoop) return [ 'hash' => $tx, 'status' => 'PENDING' ];
       $this->txData = [
         'txReceipt' => null,
         'tx' => null,
