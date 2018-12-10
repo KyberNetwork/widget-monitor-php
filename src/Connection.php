@@ -44,7 +44,7 @@ class Connection
     return $txData;
   }
 
-  protected function getPaymentData($logData){
+  public function getPaymentData($logData){
     $readLogData = readTxLog($logData);
     $paymentData = '';
     foreach($readLogData as $key => $value){
