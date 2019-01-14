@@ -195,12 +195,11 @@ class Monitor{
     $tx = $this->txData['tx'];
     
     $eventLogParams = [
-      'srcAddress' => 0, 
-      'srcToken' => 1, 
+      'srcToken' => 0, 
+      'destToken' => 1, 
       'srcAmount' => 2, 
-      'destAddress' => 3, 
-      'destToken' => 4, 
-      'destAmount' => 5
+      'destAmount' => 3, 
+      'destAddress' => 4, 
     ];
 
     $src = [];
@@ -235,7 +234,7 @@ class Monitor{
       }
     }
 
-    $sentAddress = toAddress($readLogData[$eventLogParams['srcAddress']]);
+    $sentAddress = toAddress($readLogData[$eventLogParams['destAddress']]);
     $receivedAddress = toAddress($readLogData[$eventLogParams['destAddress']]);
     return [
       'src' => $src, 
